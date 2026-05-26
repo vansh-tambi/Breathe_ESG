@@ -39,6 +39,8 @@ Author: engineering (prototype phase)
 
 **Alternative rejected:** Store original CSV files as blobs. Preserves the original but makes per-row error reporting require re-parsing the file every time. Row-level JSON storage trades disk space for operational convenience.
 
+**Lineage Protection:** The relation `NormalizedRecord.raw_record` is defined as `on_delete=models.PROTECT` rather than `SET_NULL`. Deleting raw source records is prohibited if they are tied to normalized metrics. This preserves unbroken audit lineage for GHG disclosures, ensuring every reported metric is permanently traceable to its raw source row.
+
 ---
 
 ## D4: Hardcoded Emission Factors
@@ -68,15 +70,15 @@ Author: engineering (prototype phase)
 
 ---
 
-## D6: No Authentication in Prototype
+## D6: Minimal Local/Remote Access Controls
 
-**Decision:** All endpoints use `AllowAny` permission. No login, no tokens, no session management.
+**Decision:** Endpoints use a custom `IsAuthenticatedOrLocal` permission class rather than public `AllowAny`.
 
-**Why:** The prototype is for demonstrating the data pipeline, not the auth flow. Adding JWT/session auth is a well-understood problem that can be bolted on in a day. Spending prototype time on it would displace actual domain logic.
+**Why:** To support secure remote demonstrations and deployment previews without adding full authentication overhead. Requests originating from localhost bypass verification, while external/remote requests are validated for an active user session (`request.user.is_authenticated`).
 
-**How we handle multi-tenancy without auth:** The frontend passes `company_id` as a query parameter. This is obviously insecure — any client can query any tenant's data. Acceptable for prototype, completely unacceptable for production.
+**Tradeoff accepted:** Local environments query and upload data seamlessly. Remote deployments require authorization. This isolates public-facing preview servers from ingestion abuse.
 
-**What production needs:** Django REST Framework's `TokenAuthentication` or `SimpleJWT`, a middleware that extracts tenant from the token, and removal of the `company_id` query param pattern.
+**What production needs:** Production deployment requires a standardized authentication framework (such as `TokenAuthentication` or `SimpleJWT`) and removal of the localhost bypass helper.
 
 ---
 
@@ -129,3 +131,19 @@ Author: engineering (prototype phase)
 **Why:** Distance-based emission factors are the standard methodology in GHG Protocol Scope 3 Category 6 (Business Travel). Fare-based methods exist but require spend-to-emission conversion tables that vary by airline, class, and route.
 
 **Problem:** Concur exports often don't include distance. The pipeline stores `distance_km = None` for rows with missing distance data, and sets CO₂e to zero. This means missing-distance rows are effectively ignored in emissions totals. In production, we'd need a distance estimation service (e.g., IATA airport-pair distance database) as a fallback.
+
+---
+
+## D12: Removal of Cryptographic Ledger Hash
+
+**Decision:** The `ledger_hash` field was permanently removed from the `AuditEvent` schema.
+
+**Why:** Storing a placeholder hash column suggests tamper-proof integrity checks exist when they do not. Standard PostgreSQL transactions secure database operations. Real hash validation would require proper block-generation workflows and cryptographic signatures, which are deferred.
+
+---
+
+## D13: Review Lock Mechanism
+
+**Decision:** Implemented a explicit `LOCK` action in `ReviewDecision` choices along with status flags mapping.
+
+**Why:** Finalized or certified records must be immutable for auditor analysis. When a record is locked (`POST /api/review/lock/`), the system asserts `is_locked = True` and writes a corresponding `LOCK` event to prevent subsequent changes to normalized values.
