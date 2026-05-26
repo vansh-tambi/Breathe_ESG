@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from apps.normalization.models import NormalizedRecord
-from apps.review.models import ReviewDecision
+from apps.normalization.models import NormalizedRecord, ReviewDecision
 
 class NormalizedRecordSerializer(serializers.ModelSerializer):
     class Meta:

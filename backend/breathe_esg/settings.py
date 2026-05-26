@@ -64,8 +64,6 @@ CUSTOM_DOMAIN_APPS = [
     'apps.companies.apps.CompaniesConfig',
     'apps.ingestion.apps.IngestionConfig',
     'apps.normalization.apps.NormalizationConfig',
-    'apps.review.apps.ReviewConfig',
-    'apps.audit.apps.AuditConfig',
 ]
 
 INSTALLED_APPS = DJANGO_CORE_APPS + THIRD_PARTY_APPS + CUSTOM_DOMAIN_APPS

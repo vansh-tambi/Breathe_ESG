@@ -24,7 +24,4 @@ urlpatterns = [
     # Dedicated API routing entrypoints for modular domains
     path('api/v1/companies/', include('apps.companies.urls')),
     path('api/v1/ingestion/', include('apps.ingestion.urls')),
-    path('api/v1/normalization/', include('apps.normalization.urls')),
-    path('api/v1/review/', include('apps.review.urls')),
-    path('api/v1/audit/', include('apps.audit.urls')),
 ]

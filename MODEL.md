@@ -7,7 +7,7 @@ Author: engineering (prototype phase)
 
 ## Overview
 
-Six core entities across three Django apps. The schema is deliberately flat — we avoided deep normalization because the prototype timeline (4 days) doesn't justify the complexity of a fully normalized star schema, and the query patterns we actually need are simple filtered scans, not analytical joins.
+Five core entities across two Django apps (ingestion and normalization). The schema is deliberately flat — we avoided deep normalization because the prototype timeline (4 days) doesn't justify the complexity of a fully normalized star schema, and the query patterns we actually need are simple filtered scans, not analytical joins.
 
 ---
 
@@ -22,7 +22,8 @@ Company
   │           │
   │           └── NormalizedRecord (1:1)
   │                 │
-  │                 └── ReviewDecision (1:N, append-only)
+  │                 ├── ReviewDecision (1:N, append-only)
+  │                 └── AuditEvent (1:N, append-only)
   │
   └── PlantLookup (1:N, SAP-specific)
 ```
@@ -131,7 +132,7 @@ The unified, carbon-calculated record. One NormalizedRecord per RawRecord (1:1).
 
 ---
 
-### ReviewDecision (`review.ReviewDecision`)
+### ReviewDecision (`normalization.ReviewDecision`)
 
 Append-only audit log. Every approve/reject/flag action creates a new row. Rows are never updated or deleted.
 
@@ -149,13 +150,26 @@ Append-only audit log. Every approve/reject/flag action creates a new row. Rows 
 
 ---
 
+### AuditEvent (`normalization.AuditEvent`)
+
+Immutable log of administrative freezes and transaction-level events for compliance. 
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | UUID PK | |
+| company | FK → Company | PROTECT |
+| actor | FK → User | |
+| action_type | CharField | RECORD_INGESTED, METRIC_APPROVED, etc. |
+| payload_snapshot | JSONField | Serialized states context |
+| action_timestamp | DateTimeField | Immutable event timestamp |
+
+---
+
 ## Migration Sequence
 
 1. `companies` — no dependencies
 2. `ingestion` — depends on companies
-3. `normalization` — depends on ingestion (RawRecord FK)
-4. `review` — depends on normalization (NormalizedRecord FK)
-5. `audit` — depends on review (future)
+3. `normalization` — depends on ingestion (RawRecord & Company FKs)
 
 This ordering is strict. You cannot run normalization migrations before ingestion migrations exist.
 
@@ -167,3 +181,5 @@ This ordering is strict. You cannot run normalization migrations before ingestio
 - No `EmissionFactor` table — factors are hardcoded in pipeline functions. This is the single biggest technical debt item.
 - No `User` model customization — using Django's default auth.User, which the prototype doesn't even require.
 - `company` FK is denormalized onto RawRecord and NormalizedRecord. Correct but redundant. We accepted the storage cost for query simplicity.
+- Cryptographic `ledger_hash` was removed from the `AuditEvent` schema due to lack of generation or verification logic in the prototype stage.
+
