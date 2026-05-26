@@ -3,14 +3,11 @@ import io
 import uuid
 from decimal import Decimal
 from datetime import datetime
-
 from django.db import transaction
 from django.core.exceptions import ValidationError
-
-from apps.ingestion.models import RawRecord, DataSource
+from apps.ingestion.models import RawRecord
 from apps.normalization.models import NormalizedRecord
 
-# Unit conversion map for distance units
 UNIT_NORMALIZATION_MAP = {
     'KM': ('Kilometers', Decimal('1.0')),
     'KILOMETERS': ('Kilometers', Decimal('1.0')),
@@ -18,7 +15,6 @@ UNIT_NORMALIZATION_MAP = {
     'MI': ('Kilometers', Decimal('1.60934')),
 }
 
-# Allowed travel categories
 TRAVEL_CATEGORIES = {
     'flight': 'flight',
     'hotel': 'hotel',
@@ -26,8 +22,8 @@ TRAVEL_CATEGORIES = {
 }
 
 def parse_date(date_str):
-    """Parse common date formats into a ``datetime.date``.
-    Supports ISO (YYYY-MM-DD), European (DD/MM/YYYY) and US (MM/DD/YYYY).
+    """
+    Parse ISO, European, or US date string format into a date object.
     """
     date_str = date_str.strip()
     for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y'):
@@ -38,13 +34,12 @@ def parse_date(date_str):
     raise ValueError(f"Unable to parse date '{date_str}'. Expected ISO or common European/US formats.")
 
 def clean_decimal(value_str):
-    """Convert a string to ``Decimal`` safely. Empty strings become 0.
-    Handles commas as decimal separators.
+    """
+    Convert numeric string to Decimal, handling comma as a decimal separator.
     """
     value_str = value_str.strip()
     if not value_str:
         return Decimal('0')
-    # Replace comma decimal separator with dot
     if ',' in value_str and '.' not in value_str:
         value_str = value_str.replace(',', '.')
     try:
@@ -53,24 +48,21 @@ def clean_decimal(value_str):
         raise ValueError(f"Unable to parse '{value_str}' as a decimal number.")
 
 def process_travel_csv(company, data_source, file_handle):
-    """Process a Concur‑style travel CSV file.
-
-    The function creates ``RawRecord`` entries for auditability and a corresponding
-    ``NormalizedRecord`` that captures travel‑specific attributes.
+    """
+    Parse travel CSV, validate headers, convert distances, and save raw and normalized records.
     """
     REQUIRED_HEADERS = [
-        'Category',          # flight / hotel / ground (case‑insensitive)
-        'Date',              # date of travel activity
-        'Origin',            # IATA code (or hotel city) – optional for hotel
-        'Destination',       # IATA code (or hotel city) – optional for hotel
-        'Distance',          # numeric distance, may be empty for hotel stays
-        'Unit',              # KM, MILES etc.
+        'Category',
+        'Date',
+        'Origin',
+        'Destination',
+        'Distance',
+        'Unit',
     ]
 
     file_data = file_handle.read().decode('utf-8')
     csv_reader = csv.DictReader(io.StringIO(file_data))
 
-    # Validate headers
     headers = [h.strip() for h in (csv_reader.fieldnames or [])]
     missing = [h for h in REQUIRED_HEADERS if h not in headers]
     if missing:
@@ -83,7 +75,6 @@ def process_travel_csv(company, data_source, file_handle):
 
     with transaction.atomic():
         for line_idx, row in enumerate(csv_reader, start=1):
-            # Normalise keys
             row = {k.strip(): (v.strip() if v else '') for k, v in row.items() if k}
 
             raw_record = RawRecord.objects.create(
@@ -96,20 +87,16 @@ def process_travel_csv(company, data_source, file_handle):
             )
 
             try:
-                # Category handling
                 cat_raw = row.get('Category', '').lower()
                 if cat_raw not in TRAVEL_CATEGORIES:
                     raise ValueError(f"Unsupported travel category '{cat_raw}'.")
                 travel_category = TRAVEL_CATEGORIES[cat_raw]
 
-                # Date parsing
                 travel_date = parse_date(row.get('Date', ''))
 
-                # Airport code handling – store as‑is (allow empty strings)
                 origin_code = row.get('Origin', '') or None
                 destination_code = row.get('Destination', '') or None
 
-                # Distance handling – may be missing for hotel stays
                 distance_str = row.get('Distance', '')
                 unit_raw = row.get('Unit', '').upper()
 
@@ -120,11 +107,9 @@ def process_travel_csv(company, data_source, file_handle):
                     norm_unit_name, multiplier = UNIT_NORMALIZATION_MAP[unit_raw]
                     distance_km = (raw_distance * multiplier).quantize(Decimal('0.01'))
                 else:
-                    # Missing distance – flag as None; later logic may decide to reject
                     distance_km = None
 
-                # Emission factor – simple placeholder for demonstration
-                # Flight: 0.115 kg CO₂e per passenger‑km, Hotel & Ground: 0.05 kg CO₂e per km
+                # Calculate emissions using standard factors (Flight: 0.115 kg/km, Other: 0.05 kg/km)
                 if travel_category == 'flight':
                     ef = Decimal('0.115')
                 else:
@@ -132,7 +117,6 @@ def process_travel_csv(company, data_source, file_handle):
 
                 co2e = (distance_km * ef / Decimal('1000')) if distance_km is not None else Decimal('0')
 
-                # Normalized record creation
                 NormalizedRecord.objects.create(
                     company=company,
                     raw_record=raw_record,

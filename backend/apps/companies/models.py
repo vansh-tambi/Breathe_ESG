@@ -10,10 +10,7 @@ class Company(models.Model):
     domain_prefix = models.CharField(max_length=63, unique=True, db_index=True)
     is_active = models.BooleanField(default=True)
     
-    # Justification: Needed by operations and compliance to track client onboarding timelines.
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
-    
-    # Justification: Needed to audit administrative configuration changes to tenant parameters.
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

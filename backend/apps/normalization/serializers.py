@@ -15,7 +15,7 @@ class NormalizedRecordSerializer(serializers.ModelSerializer):
             'normalized_unit',
             'review_status',
             'is_locked',
-            # travel specific optional fields
+            # Travel specific fields
             'travel_category',
             'origin_airport_code',
             'destination_airport_code',

@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import AllowAny # For prototype testing purposes
+from rest_framework.permissions import AllowAny # AllowAny for local testing
 from apps.ingestion.serializers import SAPIngestionSerializer, UtilityIngestionSerializer
 from apps.ingestion.services.travel_pipeline import process_travel_csv
 from apps.ingestion.services.sap_pipeline import process_sap_csv

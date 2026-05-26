@@ -8,12 +8,9 @@ from django.core.exceptions import ValidationError
 from apps.ingestion.models import RawRecord
 from apps.normalization.models import NormalizedRecord
 
-# ------------------------------------------------------------------------------
-# Localized Date Range & Parsing Helpers
-# ------------------------------------------------------------------------------
 def parse_flexible_date(date_str):
     """
-    Parses dynamic date formats commonly exported by energy portals.
+    Parse dynamic date strings into a date object using various common patterns.
     """
     date_str = date_str.strip()
     for fmt in ('%Y-%m-%d', '%d.%m.%Y', '%m/%d/%Y', '%Y%m%d'):
@@ -26,8 +23,7 @@ def parse_flexible_date(date_str):
 
 def parse_billing_period(range_str):
     """
-    Splits and parses a billing period interval string into start and end dates.
-    Example: '2025-11-01 - 2025-11-30' -> (date(2025, 11, 1), date(2025, 11, 30))
+    Split and parse a billing period interval string (e.g. '2025-11-01 - 2025-11-30') into start and end dates.
     """
     range_str = range_str.strip()
     separators = (' - ', ' to ', '-', 'to')
@@ -44,12 +40,9 @@ def parse_billing_period(range_str):
     raise ValueError(f"Unable to split billing interval '{range_str}' using standard separators.")
 
 
-# ------------------------------------------------------------------------------
-# Pro-Rata Calendar Splitting Engine
-# ------------------------------------------------------------------------------
 def split_billing_period_pro_rata(start_date, end_date, total_consumption):
     """
-    Divides standard billing periods spanning calendar months into linear daily splits.
+    Linearly split consumption across calendar month segments within a billing period.
     """
     total_days = (end_date - start_date).days + 1
     if total_days <= 0:
@@ -60,22 +53,18 @@ def split_billing_period_pro_rata(start_date, end_date, total_consumption):
     current_date = start_date
     
     while current_date <= end_date:
-        # Resolve the boundary of the current calendar month
         if current_date.month == 12:
             next_month_start = date(current_date.year + 1, 1, 1)
         else:
             next_month_start = date(current_date.year, current_date.month + 1, 1)
             
         month_end = next_month_start - timedelta(days=1)
-        
-        # Constrain the month boundary by the billing cycle end date
         segment_end = min(month_end, end_date)
         segment_days = (segment_end - current_date).days + 1
-        
         segment_consumption = daily_rate * Decimal(segment_days)
         
         splits.append({
-            "reporting_date": segment_end,  # Align target reporting to segment boundary
+            "reporting_date": segment_end,
             "segment_days": segment_days,
             "consumption": segment_consumption
         })
@@ -85,12 +74,9 @@ def split_billing_period_pro_rata(start_date, end_date, total_consumption):
     return splits
 
 
-# ------------------------------------------------------------------------------
-# Core Utility Ingestion Engine
-# ------------------------------------------------------------------------------
 def process_utility_csv(company, data_source, file_handle):
     """
-    Main utility portal ingestion pipeline. Handles pro-rata splits and outliers.
+    Parse utility portal CSV, perform pro-rata calendar calculations, flag outliers, and save records.
     """
     REQUIRED_HEADERS = ['meter_id', 'billing_period', 'consumption', 'unit']
     
@@ -107,9 +93,9 @@ def process_utility_csv(company, data_source, file_handle):
     records_failed = 0
     failures_log = []
     
-    # Static Thresholds for Suspicious Detection
-    DAILY_CONSUMPTION_SUSPICIOUS_LIMIT = Decimal('5000.0000')  # 5,000 kWh per day
-    TOTAL_AGGREGATED_SUSPICIOUS_LIMIT = Decimal('150000.0000')  # 150,000 kWh in a single month
+    # Thresholds for Outlier Detection (kWh)
+    DAILY_CONSUMPTION_SUSPICIOUS_LIMIT = Decimal('5000.0000')
+    TOTAL_AGGREGATED_SUSPICIOUS_LIMIT = Decimal('150000.0000')
     
     with transaction.atomic():
         for line_idx, row in enumerate(csv_reader, start=1):
@@ -125,11 +111,9 @@ def process_utility_csv(company, data_source, file_handle):
             )
             
             try:
-                # A. Parse raw consumption values
                 raw_qty_str = row.get('consumption', '')
                 raw_quantity = Decimal(raw_qty_str)
                 
-                # B. Standardize units and convert MWh -> kWh
                 raw_unit = row.get('unit', '').upper()
                 if raw_unit == 'MWH':
                     normalized_quantity = raw_quantity * Decimal('1000.0000')
@@ -140,14 +124,11 @@ def process_utility_csv(company, data_source, file_handle):
                 else:
                     raise ValueError(f"Unsupported utility energy unit '{raw_unit}'. MWh or kWh only.")
                 
-                # C. Extract billing dates range
                 billing_str = row.get('billing_period', '')
                 start_date, end_date = parse_billing_period(billing_str)
                 
-                # D. Split spanning intervals pro-rata into calendar segments
                 segments = split_billing_period_pro_rata(start_date, end_date, normalized_quantity)
                 
-                # E. Process and calculate emissions per calendar segment
                 total_days = (end_date - start_date).days + 1
                 daily_usage = normalized_quantity / Decimal(total_days)
                 
@@ -155,11 +136,10 @@ def process_utility_csv(company, data_source, file_handle):
                     seg_qty = seg["consumption"]
                     seg_date = seg["reporting_date"]
                     
-                    # Standard grid electricity Scope 2 factor: e.g. 0.385 kg CO2e per kWh
+                    # Electricity Scope 2 emissions factor (0.385 kg CO2e / kWh)
                     factor = Decimal('0.38500000')
                     co2e_val = (seg_qty * factor) / Decimal('1000.0')
                     
-                    # Outlier Detection Rules
                     is_suspicious = False
                     warning_note = ""
                     

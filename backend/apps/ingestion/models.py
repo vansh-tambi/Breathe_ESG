@@ -22,8 +22,6 @@ class DataSource(models.Model):
         help_text="Stores client-specific column mappings, plant code translation tables, or API parameters."
     )
     is_active = models.BooleanField(default=True)
-    
-    # Justification: Crucial to track when integrations were established or reconfigured.
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -55,8 +53,6 @@ class RawRecord(models.Model):
     processing_state = models.CharField(max_length=30, choices=STATE_CHOICES, default='UNPROCESSED', db_index=True)
     structural_error = models.TextField(null=True, blank=True, help_text="Details structural compilation or column failures.")
     
-    # Justification: Needed to prove the legal arrival timestamp of data payloads to regulators.
-    # Excluded updated_at: Raw data is immutable; raw values must never be modified once received.
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
 
     class Meta:

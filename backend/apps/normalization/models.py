@@ -84,8 +84,7 @@ class NormalizedRecord(models.Model):
 
 class ReviewDecision(models.Model):
     """
-    Captures human certification, disputes, or overrides of carbon metrics.
-    This model is strictly write-once (immutable).
+    Human verification, certification, or override actions for normalized metrics.
     """
     ACTION_CHOICES = [
         ('APPROVE', 'Certified and Approved'),
@@ -115,9 +114,7 @@ class ReviewDecision(models.Model):
 
 class AuditEvent(models.Model):
     """
-    Maintains an immutable, chronologically-chained record of all system state transitions
-    and administrative freezes for compliance verification.
-    This model is strictly write-once (immutable).
+    Record of administrative freezes and transaction-level events for compliance.
     """
     ACTION_TYPES = [
         ('RECORD_INGESTED', 'Raw Ingestion Job Completed'),
