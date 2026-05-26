@@ -58,13 +58,13 @@ export default function App() {
           </nav>
 
           {/* Status Dot */}
-          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          {/* <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
             <span
               className="w-2 h-2 rounded-full animate-pulse-glow"
               style={{ background: 'var(--color-success)' }}
             />
             Prototype
-          </div>
+          </div> */}
         </div>
       </header>
 
