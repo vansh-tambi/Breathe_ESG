@@ -21,7 +21,8 @@ urlpatterns = [
     # Built-in django admin interface
     path('admin/', admin.site.urls),
 
-    # Dedicated API routing entrypoints for modular domains
-    path('api/v1/companies/', include('apps.companies.urls')),
-    path('api/v1/ingestion/', include('apps.ingestion.urls')),
+    # Dedicated API routing entrypoints
+    path('api/companies/', include('apps.companies.urls')),
+    path('api/ingestion/', include('apps.ingestion.urls')),
+    path('api/review/', include('apps.normalization.urls')),
 ]

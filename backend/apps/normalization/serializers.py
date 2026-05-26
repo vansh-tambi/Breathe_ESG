@@ -27,3 +27,10 @@ class ReviewActionSerializer(serializers.Serializer):
     normalized_record_id = serializers.UUIDField()
     analyst_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     notes = serializers.CharField(style={'base_template': 'textarea.html'}, required=False, allow_blank=True)
+
+
+class ReviewDecisionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReviewDecision
+        fields = ['id', 'normalized_record', 'action_type', 'notes', 'created_at']
+

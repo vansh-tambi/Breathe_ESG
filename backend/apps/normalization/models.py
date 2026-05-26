@@ -32,7 +32,7 @@ class NormalizedRecord(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     company = models.ForeignKey(Company, on_delete=models.PROTECT, related_name='normalized_records', db_index=True)
-    raw_record = models.OneToOneField(RawRecord, on_delete=models.SET_NULL, null=True, blank=True, related_name='normalized')
+    raw_record = models.OneToOneField(RawRecord, on_delete=models.PROTECT, null=True, blank=True, related_name='normalized')
     
     activity_type = models.CharField(max_length=50, choices=ACTIVITY_TYPES, db_index=True)
     scope_classification = models.CharField(max_length=30, choices=SCOPE_CLASSIFICATIONS, db_index=True)
@@ -90,6 +90,7 @@ class ReviewDecision(models.Model):
         ('APPROVE', 'Certified and Approved'),
         ('DISPUTE', 'Disputed Back to Source'),
         ('FLAG_SUSPICIOUS', 'Flagged as Outlier / Suspicious'),
+        ('LOCK', 'Locked for Compliance Audit'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
