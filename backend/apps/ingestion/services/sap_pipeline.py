@@ -2,11 +2,11 @@ import csv
 import io
 import uuid
 from decimal import Decimal
-from datetime import datetime
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from apps.ingestion.models import RawRecord, PlantLookup
 from apps.normalization.models import NormalizedRecord
+from apps.common.utils import parse_date_flexible, clean_decimal_flexible, validate_csv_headers
 
 UNIT_NORMALIZATION_MAP = {
     'L': ('Liters', Decimal('1.0')),
@@ -20,38 +20,6 @@ UNIT_NORMALIZATION_MAP = {
     'CBM': ('Cubic Meters', Decimal('1.0')),
     'M3': ('Cubic Meters', Decimal('1.0')),
 }
-
-def clean_german_decimal(value_str):
-    """
-    Convert localized German number format (e.g. '1.500,50') to Decimal.
-    """
-    value_str = value_str.strip()
-    if not value_str:
-        return Decimal('0.0000')
-    
-    if '.' in value_str and ',' in value_str:
-        value_str = value_str.replace('.', '').replace(',', '.')
-    elif ',' in value_str:
-        value_str = value_str.replace(',', '.')
-        
-    try:
-        return Decimal(value_str)
-    except Exception:
-        raise ValueError(f"Unable to parse '{value_str}' as a valid decimal number.")
-
-
-def parse_german_date(date_str):
-    """
-    Parse German dot formatted dates or common ISO formats.
-    """
-    date_str = date_str.strip()
-    for fmt in ('%d.%m.%Y', '%Y-%m-%d', '%Y%m%d'):
-        try:
-            return datetime.strptime(date_str, fmt).date()
-        except ValueError:
-            continue
-    raise ValueError(f"Unable to parse date '{date_str}'. Expected German dot format (DD.MM.YYYY).")
-
 
 def resolve_emissions_profile(material_text, normalized_qty, normalized_unit):
     """
@@ -119,10 +87,7 @@ def process_sap_csv(company, data_source, file_handle):
     file_data = file_handle.read().decode('utf-8')
     csv_reader = csv.DictReader(io.StringIO(file_data))
     
-    headers = [h.strip() for h in (csv_reader.fieldnames or [])]
-    missing_headers = [h for h in REQUIRED_HEADERS if h not in headers]
-    if missing_headers:
-        raise ValidationError(f"Missing required German headers: {', '.join(missing_headers)}")
+    validate_csv_headers(csv_reader.fieldnames, REQUIRED_HEADERS, "Missing required German headers")
         
     job_id = uuid.uuid4()
     records_saved = 0
@@ -144,7 +109,7 @@ def process_sap_csv(company, data_source, file_handle):
             
             try:
                 raw_qty_str = row.get('Menge', '')
-                raw_quantity = clean_german_decimal(raw_qty_str)
+                raw_quantity = clean_decimal_flexible(raw_qty_str)
                 
                 raw_unit = row.get('Einheit', '').upper()
                 if raw_unit not in UNIT_NORMALIZATION_MAP:
@@ -154,7 +119,7 @@ def process_sap_csv(company, data_source, file_handle):
                 normalized_quantity = raw_quantity * norm_multiplier
                 
                 raw_date_str = row.get('Buchungsdatum', '')
-                reporting_date = parse_german_date(raw_date_str)
+                reporting_date = parse_date_flexible(raw_date_str)
                 
                 werk_code = row.get('Werk', '')
                 try:

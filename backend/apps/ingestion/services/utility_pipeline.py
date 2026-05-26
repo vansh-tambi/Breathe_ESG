@@ -2,24 +2,12 @@ import csv
 import io
 import uuid
 from decimal import Decimal
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from apps.ingestion.models import RawRecord
 from apps.normalization.models import NormalizedRecord
-
-def parse_flexible_date(date_str):
-    """
-    Parse dynamic date strings into a date object using various common patterns.
-    """
-    date_str = date_str.strip()
-    for fmt in ('%Y-%m-%d', '%d.%m.%Y', '%m/%d/%Y', '%Y%m%d'):
-        try:
-            return datetime.strptime(date_str, fmt).date()
-        except ValueError:
-            continue
-    raise ValueError(f"Unable to parse date string '{date_str}'.")
-
+from apps.common.utils import parse_date_flexible, clean_decimal_flexible, validate_csv_headers
 
 def parse_billing_period(range_str):
     """
@@ -32,8 +20,8 @@ def parse_billing_period(range_str):
             parts = range_str.split(sep)
             if len(parts) == 2:
                 try:
-                    start_date = parse_flexible_date(parts[0])
-                    end_date = parse_flexible_date(parts[1])
+                    start_date = parse_date_flexible(parts[0])
+                    end_date = parse_date_flexible(parts[1])
                     return start_date, end_date
                 except ValueError:
                     continue
@@ -83,10 +71,7 @@ def process_utility_csv(company, data_source, file_handle):
     file_data = file_handle.read().decode('utf-8')
     csv_reader = csv.DictReader(io.StringIO(file_data))
     
-    headers = [h.strip() for h in (csv_reader.fieldnames or [])]
-    missing_headers = [h for h in REQUIRED_HEADERS if h not in headers]
-    if missing_headers:
-        raise ValidationError(f"Missing required portal headers: {', '.join(missing_headers)}")
+    validate_csv_headers(csv_reader.fieldnames, REQUIRED_HEADERS, "Missing required portal headers")
         
     job_id = uuid.uuid4()
     records_saved = 0
@@ -112,7 +97,7 @@ def process_utility_csv(company, data_source, file_handle):
             
             try:
                 raw_qty_str = row.get('consumption', '')
-                raw_quantity = Decimal(raw_qty_str)
+                raw_quantity = clean_decimal_flexible(raw_qty_str)
                 
                 raw_unit = row.get('unit', '').upper()
                 if raw_unit == 'MWH':

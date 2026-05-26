@@ -2,11 +2,11 @@ import csv
 import io
 import uuid
 from decimal import Decimal
-from datetime import datetime
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from apps.ingestion.models import RawRecord
 from apps.normalization.models import NormalizedRecord
+from apps.common.utils import parse_date_flexible, clean_decimal_flexible, validate_csv_headers
 
 UNIT_NORMALIZATION_MAP = {
     'KM': ('Kilometers', Decimal('1.0')),
@@ -20,32 +20,6 @@ TRAVEL_CATEGORIES = {
     'hotel': 'hotel',
     'ground': 'ground',
 }
-
-def parse_date(date_str):
-    """
-    Parse ISO, European, or US date string format into a date object.
-    """
-    date_str = date_str.strip()
-    for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y'):
-        try:
-            return datetime.strptime(date_str, fmt).date()
-        except ValueError:
-            continue
-    raise ValueError(f"Unable to parse date '{date_str}'. Expected ISO or common European/US formats.")
-
-def clean_decimal(value_str):
-    """
-    Convert numeric string to Decimal, handling comma as a decimal separator.
-    """
-    value_str = value_str.strip()
-    if not value_str:
-        return Decimal('0')
-    if ',' in value_str and '.' not in value_str:
-        value_str = value_str.replace(',', '.')
-    try:
-        return Decimal(value_str)
-    except Exception:
-        raise ValueError(f"Unable to parse '{value_str}' as a decimal number.")
 
 def process_travel_csv(company, data_source, file_handle):
     """
@@ -63,10 +37,7 @@ def process_travel_csv(company, data_source, file_handle):
     file_data = file_handle.read().decode('utf-8')
     csv_reader = csv.DictReader(io.StringIO(file_data))
 
-    headers = [h.strip() for h in (csv_reader.fieldnames or [])]
-    missing = [h for h in REQUIRED_HEADERS if h not in headers]
-    if missing:
-        raise ValidationError(f"Missing required travel CSV headers: {', '.join(missing)}")
+    validate_csv_headers(csv_reader.fieldnames, REQUIRED_HEADERS, "Missing required travel CSV headers")
 
     job_id = uuid.uuid4()
     saved = 0
@@ -92,7 +63,7 @@ def process_travel_csv(company, data_source, file_handle):
                     raise ValueError(f"Unsupported travel category '{cat_raw}'.")
                 travel_category = TRAVEL_CATEGORIES[cat_raw]
 
-                travel_date = parse_date(row.get('Date', ''))
+                travel_date = parse_date_flexible(row.get('Date', ''))
 
                 origin_code = row.get('Origin', '') or None
                 destination_code = row.get('Destination', '') or None
@@ -101,7 +72,7 @@ def process_travel_csv(company, data_source, file_handle):
                 unit_raw = row.get('Unit', '').upper()
 
                 if distance_str:
-                    raw_distance = clean_decimal(distance_str)
+                    raw_distance = clean_decimal_flexible(distance_str)
                     if unit_raw not in UNIT_NORMALIZATION_MAP:
                         raise ValueError(f"Unrecognised distance unit '{unit_raw}'.")
                     norm_unit_name, multiplier = UNIT_NORMALIZATION_MAP[unit_raw]
@@ -109,7 +80,6 @@ def process_travel_csv(company, data_source, file_handle):
                 else:
                     distance_km = None
 
-                # Calculate emissions using standard factors (Flight: 0.115 kg/km, Other: 0.05 kg/km)
                 if travel_category == 'flight':
                     ef = Decimal('0.115')
                 else:
