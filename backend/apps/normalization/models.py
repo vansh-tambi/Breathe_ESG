@@ -44,6 +44,21 @@ class NormalizedRecord(models.Model):
     # Converted Values (Normalized to standard metric values, e.g. kWh, Liters, Passenger-KM)
     normalized_quantity = models.DecimalField(max_digits=18, decimal_places=4)
     normalized_unit = models.CharField(max_length=50)
+    # Travel-specific fields (optional)
+    travel_category = models.CharField(
+        max_length=20,
+        choices=[
+            ('flight', 'Flight'),
+            ('hotel', 'Hotel'),
+            ('ground', 'Ground'),
+        ],
+        null=True,
+        blank=True,
+        help_text='Category of travel activity.'
+    )
+    origin_airport_code = models.CharField(max_length=10, null=True, blank=True, help_text='IATA code of origin airport')
+    destination_airport_code = models.CharField(max_length=10, null=True, blank=True, help_text='IATA code of destination airport')
+    distance_km = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text='Travel distance in kilometers')
     
     # Calculation Audit Details
     emission_factor_applied = models.DecimalField(max_digits=18, decimal_places=8)
