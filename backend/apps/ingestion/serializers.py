@@ -44,6 +44,9 @@ class TravelIngestionSerializer(serializers.Serializer):
         if not value.name.endswith('.csv'):
             raise serializers.ValidationError("Only CSV formatted data exports are supported.")
         return value
+
+
+class UtilityIngestionSerializer(serializers.Serializer):
     """
     Validates incoming utility portal CSV files and matches utility configurations.
     """
@@ -64,3 +67,4 @@ class TravelIngestionSerializer(serializers.Serializer):
         if not value.name.endswith('.csv'):
             raise serializers.ValidationError("Only CSV formatted data exports are supported.")
         return value
+
