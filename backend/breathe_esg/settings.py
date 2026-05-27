@@ -180,11 +180,17 @@ if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOW_ALL_ORIGINS = False
-    # Always allow common localhost origins during development/local run
     CORS_ALLOWED_ORIGINS += [
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
+        'https://breathe-esg-flame-theta.vercel.app',
     ]
+
+# Always allow common localhost origins for local development support
+CORS_ALLOWED_ORIGINS += [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
+
+
 
