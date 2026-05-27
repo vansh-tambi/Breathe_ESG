@@ -148,6 +148,8 @@ USE_TZ = True
 # ------------------------------------------------------------------------------
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Ensure the directory exists on startup to prevent Whitenoise crashes before collectstatic runs
+os.makedirs(STATIC_ROOT, exist_ok=True)
 
 # Whitenoise storage configuration for static asset compression
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
