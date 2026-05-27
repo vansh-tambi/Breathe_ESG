@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { api } from '../api.js';
 
 export default function FileUploader({ uploadType, endpoint, accent }) {
   const [file, setFile] = useState(null);
@@ -11,7 +11,7 @@ export default function FileUploader({ uploadType, endpoint, accent }) {
 
   const upload = useMutation({
     mutationFn: (formData) =>
-      axios.post(endpoint, formData, {
+      api.post(endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     onSuccess: () => {
