@@ -82,6 +82,7 @@ export default function FileUploader({ uploadType, endpoint, accent }) {
           accept=".csv"
           className="hidden"
           onChange={(e) => setFile(e.target.files[0] || null)}
+          onClick={(e) => e.stopPropagation()}
         />
 
         {file ? (
