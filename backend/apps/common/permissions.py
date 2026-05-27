@@ -1,11 +1,12 @@
+from django.conf import settings
 from rest_framework.permissions import BasePermission
 
 class IsAuthenticatedOrLocal(BasePermission):
     """
-    Allow requests from localhost for prototype validation, 
-    otherwise require authenticated access.
+    Development-only bypass: allow requests without authentication if settings.DEBUG is True,
+    otherwise require standard authenticated access.
     """
     def has_permission(self, request, view):
-        if request.META.get('REMOTE_ADDR') in ('127.0.0.1', '::1'):
+        if settings.DEBUG:
             return True
-        return request.user and request.user.is_authenticated
+        return bool(request.user and request.user.is_authenticated)

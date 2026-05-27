@@ -62,6 +62,10 @@ This document tracks where we got our numbers, what we assumed, and what we made
 - The German column headers (Materialbeleg, Buchungsdatum, Werk, Menge, Einheit, Materialtext) are based on a standard SAP MM (Materials Management) transaction export (MIGO/MB51).
 - Different SAP configurations may use different column names or include additional fields. Our header validation is strict — any missing expected header rejects the entire file.
 
+### Utility Portal Export Format
+- The actual CSV structure (`meter_id`, `billing_period`, `consumption`, `unit`) is based on a simplified format exported by typical electricity utility billing portals.
+- The `billing_period` column must hold dates separated by standard delimiters (such as ` - `, ` to `, `-`, or `to`) representing the span of physical consumption. The consumption represents total usage (MWh or kWh) over that specific interval.
+
 ### Concur Travel Export
 - The assumed CSV structure (Category, Date, Origin, Destination, Distance, Unit) is based on a simplified version of SAP Concur's standard expense export.
 - Real Concur exports have 50+ columns. We assume a pre-filtered extract with only the columns we need.

@@ -1,0 +1,5 @@
+Category,Date,Origin,Destination,Distance,Unit
+flight,2025-11-05,JFK,FRA,3850,MILES
+hotel,2025-11-06,FRA,,12,KM
+ground,2025-11-07,FRA,MUC,400.50,KM
+flight,2025-11-10,MUC,JFK,4000,MI

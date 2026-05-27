@@ -158,9 +158,9 @@ All endpoints expect `/api` prefix routing and consume/return JSON payloads unle
     *   **Header Requirements**: `Materialbeleg`, `Buchungsdatum`, `Werk`, `Menge`, `Einheit`, `Materialtext`.
     *   **Conversions**: Maps German dates (`DD.MM.YYYY`) and parses numbers with German separators (e.g. dots for thousands, commas for decimals like `1.500,75` $\rightarrow$ `1500.75`).
     *   **Scope Calculations**: Resolves plant code matching against the [PlantLookup](file:///c:/Users/hp/OneDrive/Desktop/Breathe_ESG/backend/apps/ingestion/models.py) database table to attach geographic coordinates, and maps standard diesel or natural gas codes to hardcoded GHG emission factors.
-2.  **Utility Portal Pipeline**
-    *   **Header Requirements**: `InvoiceNumber`, `UtilityProvider`, `StartDate`, `EndDate`, `ConsumptionMWh`, `MeterNumber`.
-    *   **Calculations**: Converts raw consumption from MWh to kWh. If the billing period spans multiple calendar months, the pipeline splits the activity into daily pro-rata chunks, creating a dedicated [NormalizedRecord](file:///c:/Users/hp/OneDrive/Desktop/Breathe_ESG/backend/apps/normalization/models.py) row for each month to prevent analytical skewing.
+2.  Utility Portal Pipeline
+    *   **Header Requirements**: `meter_id`, `billing_period`, `consumption`, `unit`.
+    *   **Calculations**: Converts raw consumption from MWh to kWh (if raw unit is MWh). If the billing period spans multiple calendar months, the pipeline splits the activity into daily pro-rata chunks, creating a dedicated [NormalizedRecord](file:///e:/WebDev/Intern%20Assignments/Breathe_ESG/backend/apps/normalization/models.py) row for each month to prevent analytical skewing.
 3.  **Corporate Travel Pipeline**
     *   **Header Requirements**: `Category`, `Date`, `Origin`, `Destination`, `Distance`, `Unit`.
     *   **Calculations**: Segregates business travel into flights, hotels, or ground transport. Distances specified in units other than kilometers are automatically converted, and passenger flight footprints are computed via distance coefficients.
