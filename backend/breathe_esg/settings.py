@@ -42,7 +42,7 @@ if os.path.exists(ENV_FILE_PATH):
 # ------------------------------------------------------------------------------
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-default-temporary-key-string-for-local-boot')
 DEBUG = env('DEBUG')
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost', '::1'])
 
 # ------------------------------------------------------------------------------
 # Application Registry
