@@ -3,10 +3,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import ValidationError
+import logging
 from apps.ingestion.serializers import SAPIngestionSerializer, UtilityIngestionSerializer
 from apps.ingestion.services.travel_pipeline import process_travel_csv
 from apps.ingestion.services.sap_pipeline import process_sap_csv
 from apps.ingestion.services.utility_pipeline import process_utility_csv
+
+logger = logging.getLogger(__name__)
 
 class SAPIngestionView(APIView):
     """
@@ -32,10 +36,8 @@ class SAPIngestionView(APIView):
             )
             return Response(summary, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response(
-                {"error": "Pipeline processing failed", "details": str(e)},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY
-            )
+            logger.error("SAP Ingestion failed: %s", str(e), exc_info=True)
+            raise ValidationError({"error": "Pipeline processing failed", "details": str(e)})
 
 
 class UtilityIngestionView(APIView):
@@ -62,10 +64,8 @@ class UtilityIngestionView(APIView):
             )
             return Response(summary, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response(
-                {"error": "Pipeline processing failed", "details": str(e)},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY
-            )
+            logger.error("Utility Ingestion failed: %s", str(e), exc_info=True)
+            raise ValidationError({"error": "Pipeline processing failed", "details": str(e)})
 
 class TravelIngestionView(APIView):
     """
@@ -91,7 +91,5 @@ class TravelIngestionView(APIView):
             )
             return Response(summary, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response(
-                {"error": "Pipeline processing failed", "details": str(e)},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY
-            )
+            logger.error("Travel Ingestion failed: %s", str(e), exc_info=True)
+            raise ValidationError({"error": "Pipeline processing failed", "details": str(e)})
