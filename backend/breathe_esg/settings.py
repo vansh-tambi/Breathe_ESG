@@ -35,7 +35,7 @@ env = environ.Env(
 # Look for the .env file at the project root level (parent of backend/)
 ENV_FILE_PATH = os.path.join(BASE_DIR.parent, '.env')
 if os.path.exists(ENV_FILE_PATH):
-    environ.Env.read_env(ENV_FILE_PATH)
+    environ.Env.read_env(ENV_FILE_PATH, overwrite=False)
 
 # ------------------------------------------------------------------------------
 # Security Configurations
