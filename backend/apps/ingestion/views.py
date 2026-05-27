@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
-from apps.common.permissions import IsAuthenticatedOrLocal
+from rest_framework.permissions import AllowAny
 from apps.ingestion.serializers import SAPIngestionSerializer, UtilityIngestionSerializer
 from apps.ingestion.services.travel_pipeline import process_travel_csv
 from apps.ingestion.services.sap_pipeline import process_sap_csv
@@ -13,7 +13,7 @@ class SAPIngestionView(APIView):
     Receives SAP CSV file uploads and triggers the transactional normalization pipeline.
     """
     parser_classes = [MultiPartParser]
-    permission_classes = [IsAuthenticatedOrLocal]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = SAPIngestionSerializer(data=request.data)
@@ -43,7 +43,7 @@ class UtilityIngestionView(APIView):
     Receives Utility CSV uploads and runs standard conversions, splitting dates pro-rata.
     """
     parser_classes = [MultiPartParser]
-    permission_classes = [IsAuthenticatedOrLocal]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = UtilityIngestionSerializer(data=request.data)
@@ -72,7 +72,7 @@ class TravelIngestionView(APIView):
     Receives Concur-style travel CSV uploads and processes travel records.
     """
     parser_classes = [MultiPartParser]
-    permission_classes = [IsAuthenticatedOrLocal]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         from apps.ingestion.serializers import TravelIngestionSerializer

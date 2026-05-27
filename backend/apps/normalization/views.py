@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
-from apps.common.permissions import IsAuthenticatedOrLocal
+from rest_framework.permissions import AllowAny
 from apps.normalization.models import NormalizedRecord, ReviewDecision
 from apps.normalization.serializers import NormalizedRecordSerializer, ReviewDecisionSerializer
 
@@ -19,7 +19,7 @@ def get_mock_analyst():
 
 
 class RecordsView(APIView):
-    permission_classes = [IsAuthenticatedOrLocal]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         company_id = request.query_params.get('company_id')
@@ -29,7 +29,7 @@ class RecordsView(APIView):
 
 
 class SuspiciousView(APIView):
-    permission_classes = [IsAuthenticatedOrLocal]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         company_id = request.query_params.get('company_id')
@@ -39,7 +39,7 @@ class SuspiciousView(APIView):
 
 
 class AuditLogView(APIView):
-    permission_classes = [IsAuthenticatedOrLocal]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         company_id = request.query_params.get('company_id')
@@ -49,7 +49,7 @@ class AuditLogView(APIView):
 
 
 class ApproveRecordView(APIView):
-    permission_classes = [IsAuthenticatedOrLocal]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         record_id = request.data.get('record_id')
@@ -80,7 +80,7 @@ class ApproveRecordView(APIView):
 
 
 class RejectRecordView(APIView):
-    permission_classes = [IsAuthenticatedOrLocal]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         record_id = request.data.get('record_id')
@@ -111,7 +111,7 @@ class RejectRecordView(APIView):
 
 
 class LockRecordView(APIView):
-    permission_classes = [IsAuthenticatedOrLocal]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         record_id = request.data.get('record_id')
