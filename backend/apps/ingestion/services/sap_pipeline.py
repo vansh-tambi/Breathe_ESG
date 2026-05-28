@@ -124,6 +124,7 @@ def process_sap_csv(company, data_source, file_handle):
                 werk_code = row.get('Werk', '')
                 if not werk_code:
                     raise ValueError("SAP Plant code (Werk) is missing or empty.")
+                # Automatically register missing plant lookup entries to support demo mode ingestion
                 plant_map, _ = PlantLookup.objects.get_or_create(
                     company=company,
                     sap_plant_code=werk_code,
