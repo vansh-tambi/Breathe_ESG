@@ -122,10 +122,16 @@ def process_sap_csv(company, data_source, file_handle):
                 reporting_date = parse_date_flexible(raw_date_str)
                 
                 werk_code = row.get('Werk', '')
-                try:
-                    plant_map = PlantLookup.objects.get(company=company, sap_plant_code=werk_code)
-                except PlantLookup.DoesNotExist:
-                    raise ValueError(f"SAP Plant code '{werk_code}' is not configured in lookups.")
+                if not werk_code:
+                    raise ValueError("SAP Plant code (Werk) is missing or empty.")
+                plant_map, _ = PlantLookup.objects.get_or_create(
+                    company=company,
+                    sap_plant_code=werk_code,
+                    defaults={
+                        'facility_name': f"Demo Facility {werk_code}",
+                        'grid_region_code': "GLOBAL-GRID"
+                    }
+                )
                 
                 material_desc = row.get('Materialtext', '')
                 act_type, scope_class, final_qty, final_unit, ef_applied, co2e_val = resolve_emissions_profile(
