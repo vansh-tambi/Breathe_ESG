@@ -110,12 +110,24 @@ WSGI_APPLICATION = 'breathe_esg.wsgi'
 # ------------------------------------------------------------------------------
 # Database Configurations (PostgreSQL)
 # ------------------------------------------------------------------------------
-DATABASES = {
-    'default': env.db(
-        'DATABASE_URL',
-        default='postgres://esg_analyst:secure_password_here@localhost:5432/breathe_esg_db'
-    )
-}
+if 'DATABASE_URL' in os.environ:
+    DATABASES = {
+        'default': env.db('DATABASE_URL')
+    }
+    # Ensure compatibility with Railway PostgreSQL
+    if not DEBUG:
+        DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'require'
+else:
+    if DEBUG:
+        DATABASES = {
+            'default': env.db(
+                'DATABASE_URL',
+                default='postgres://esg_analyst:secure_password_here@localhost:5432/breathe_esg_db'
+            )
+        }
+    else:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured("DATABASE_URL environment variable is required in production.")
 
 # ------------------------------------------------------------------------------
 # Password Validation Rules
