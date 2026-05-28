@@ -44,6 +44,13 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-default-temporary-key-st
 DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost', '::1'])
 
+# Trust Railway public domains automatically
+railway_domain = os.environ.get('RAILWAY_STATIC_URL')
+if railway_domain:
+    railway_domain = railway_domain.replace('https://', '').replace('http://', '')
+    if railway_domain not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(railway_domain)
+
 # ------------------------------------------------------------------------------
 # Application Registry
 # ------------------------------------------------------------------------------
@@ -73,10 +80,10 @@ INSTALLED_APPS = DJANGO_CORE_APPS + THIRD_PARTY_APPS + CUSTOM_DOMAIN_APPS
 # Middleware Configurations
 # ------------------------------------------------------------------------------
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -163,8 +170,18 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Ensure the directory exists on startup to prevent Whitenoise crashes before collectstatic runs
 os.makedirs(STATIC_ROOT, exist_ok=True)
 
-# Whitenoise storage configuration for static asset compression
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Whitenoise storage configuration for static asset compression (modern STORAGES format for Django 4.2+)
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# Keep collectstatic from crashing on missing references in static files (e.g. invalid css references)
+WHITENOISE_MANIFEST_STRICT = False
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
